@@ -3,7 +3,7 @@ module github.com/ryczek02/ticketbench-cli
 go 1.26.2
 
 require (
-	github.com/ryczek02/ticketbench-contracts v0.1.0
+	github.com/ryczek02/ticketbench-contracts v0.2.0
 	github.com/spf13/cobra v1.10.2
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0

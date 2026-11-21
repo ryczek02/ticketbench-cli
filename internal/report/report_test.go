@@ -105,3 +105,34 @@ func TestPlans(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSecurity(t *testing.T) {
+	r, err := Load("testdata/sec")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]float64{}
+	for _, x := range r.SecurityOverheads() {
+		got[x.Profile+"/"+x.Op] = x.Ratio
+	}
+	if math.Abs(got["tls/all"]-1.5) > 1e-9 || math.Abs(got["tls/R"]-1.5) > 1e-9 || math.Abs(got["role/R"]-1) > 1e-9 {
+		t.Fatalf("overheads %v", got)
+	}
+	if _, ok := got["role/C"]; ok {
+		t.Fatal("role/C has no data and must be absent")
+	}
+	if sc := r.Scenarios(); len(sc) != 1 {
+		t.Fatalf("security rows leaked into the main summary: %d groups", len(sc))
+	}
+	dir := t.TempDir()
+	if _, err := r.Write(dir); err != nil {
+		t.Fatal(err)
+	}
+	tab, _ := os.ReadFile(filepath.Join(dir, "tables/security.tex"))
+	if !strings.Contains(string(tab), `\num[print-implicit-plus]{+50.0}`) {
+		t.Fatalf("security table:\n%s", tab)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "tables/security_contention.tex")); err != nil {
+		t.Fatal(err)
+	}
+}

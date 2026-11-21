@@ -50,6 +50,23 @@ type Contention struct {
 	TraceRatio float64 `yaml:"trace_ratio"`
 }
 
+// Security runs the scenarios and the contention test through several
+// connection profiles (least-privilege role, TLS) on the same data.
+type Security struct {
+	Enabled     bool     `yaml:"enabled"`
+	Sizes       []int64  `yaml:"sizes"`
+	Profiles    []string `yaml:"profiles"`
+	Scenarios   string   `yaml:"scenarios"`
+	Repetitions int32    `yaml:"repetitions"`
+	Warmup      int32    `yaml:"warmup"`
+	Clients     []int32  `yaml:"clients"`
+	HotTickets  int32    `yaml:"hot_tickets"`
+	Rounds      int32    `yaml:"rounds"`
+}
+
+// Profiles accepted by the security experiment ("base" is the default connection).
+var Profiles = []string{"base", "role", "tls", "tls_role"}
+
 type Overhead struct {
 	Enabled     bool     `yaml:"enabled"`
 	Size        int64    `yaml:"size"`
@@ -71,7 +88,12 @@ type Matrix struct {
 	Load        Load          `yaml:"load"`
 	Contention  Contention    `yaml:"contention"`
 	Overhead    Overhead      `yaml:"overhead"`
+	Security    Security      `yaml:"security"`
+	// Main runs the main matrix; false leaves only the security experiment.
+	Main *bool `yaml:"main"`
 }
+
+func (m Matrix) mainEnabled() bool { return m.Main == nil || *m.Main }
 
 // Default returns the configuration used for the report.
 func Default() Matrix {
@@ -136,6 +158,19 @@ func (m Matrix) Validate() error {
 	if _, err := scenario.Parse(m.Scenarios); err != nil {
 		return err
 	}
+	if m.Security.Enabled {
+		for _, p := range m.Security.Profiles {
+			if !slices.Contains(Profiles, p) {
+				return fmt.Errorf("unknown security profile %q (have %v)", p, Profiles)
+			}
+		}
+		if len(m.Security.Profiles)*int(m.Security.Warmup+m.Security.Repetitions) > 2*BaseIndexesOn {
+			return fmt.Errorf("security: profiles x (warmup + repetitions) must be <= %d", 2*BaseIndexesOn)
+		}
+		if _, err := scenario.Parse(m.Security.Scenarios); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -174,6 +209,17 @@ func (m Matrix) Segments() ([]Segment, error) {
 	if err := m.Validate(); err != nil {
 		return nil, err
 	}
+	var out []Segment
+	if m.mainEnabled() {
+		out = append(out, m.mainSegments()...)
+	}
+	if m.Security.Enabled {
+		out = append(out, m.securitySegments()...)
+	}
+	return out, nil
+}
+
+func (m Matrix) mainSegments() []Segment {
 	scs, _ := scenario.Parse(m.Scenarios)
 	var out []Segment
 	for _, size := range m.Sizes {
@@ -230,7 +276,7 @@ func (m Matrix) Segments() ([]Segment, error) {
 			}
 		}
 	}
-	return out, nil
+	return out
 }
 
 // overheadSegments repeat a few cheap scenarios with tracing on and off.
@@ -256,6 +302,55 @@ func (m Matrix) overheadSegments(store string, ds *tbv1.DatasetSpec) []Segment {
 			Name: fmt.Sprintf("%s-%d-otel-%s", store, ds.Tickets, mode.label), Store: store, Tickets: ds.Tickets,
 			Labels: map[string]string{"phase": "overhead", "otel": mode.label}, Steps: b.steps,
 		})
+	}
+	return out
+}
+
+// securitySegments load each store once (admin connection, indexes on) and
+// then run the scenarios and the contention test through every profile.
+func (m Matrix) securitySegments() []Segment {
+	sec := m.Security
+	sizes := sec.Sizes
+	if len(sizes) == 0 {
+		sizes = m.Sizes
+	}
+	scs, _ := scenario.Parse(sec.Scenarios)
+	reps, warm := max(1, sec.Repetitions), sec.Warmup
+	var out []Segment
+	for _, size := range sizes {
+		for _, store := range m.Stores {
+			b := &builder{store: store, ds: &tbv1.DatasetSpec{Tickets: size, Seed: m.Seed}}
+			b.add("reset", func(s *tbv1.Step) { s.Kind = &tbv1.Step_Reset_{Reset_: &tbv1.ResetStep{}} })
+			b.add("load", func(s *tbv1.Step) {
+				s.Kind = &tbv1.Step_Load{Load: &tbv1.LoadStep{Workers: int32(m.Load.Workers), BatchSize: int32(m.Load.BatchSize)}}
+			})
+			b.add("indexes-on", func(s *tbv1.Step) { s.Kind = &tbv1.Step_Indexes{Indexes: &tbv1.IndexStep{Enabled: true}} })
+			for i, prof := range sec.Profiles {
+				wire := prof
+				if wire == "base" {
+					wire = ""
+				}
+				base := int64(i) * int64(warm+reps)
+				b.add("scenarios-"+prof, func(s *tbv1.Step) {
+					s.Kind = &tbv1.Step_Scenarios{Scenarios: &tbv1.ScenarioStep{
+						Scenarios: ids(scs), Repetitions: reps, Warmup: warm, IterationBase: base,
+						TimeoutMs: m.Timeout.Milliseconds(), Profile: wire,
+					}}
+				})
+				if len(sec.Clients) > 0 {
+					b.add("contend-"+prof, func(s *tbv1.Step) {
+						s.Kind = &tbv1.Step_Contend{Contend: &tbv1.ContendStep{
+							Clients: sec.Clients, HotTickets: max(1, sec.HotTickets), Rounds: max(1, sec.Rounds), Profile: wire,
+						}}
+					})
+				}
+			}
+			b.add("reset", func(s *tbv1.Step) { s.Kind = &tbv1.Step_Reset_{Reset_: &tbv1.ResetStep{}} })
+			out = append(out, Segment{
+				Name: fmt.Sprintf("%s-%d-security", store, size), Store: store, Tickets: size,
+				Labels: map[string]string{"phase": "security"}, Steps: b.steps,
+			})
+		}
 	}
 	return out
 }

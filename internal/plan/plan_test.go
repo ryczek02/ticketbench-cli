@@ -64,3 +64,42 @@ func TestSegments(t *testing.T) {
 		t.Fatal("overhead segment must end with a reset")
 	}
 }
+
+func TestSecuritySegments(t *testing.T) {
+	m := Default()
+	off := false
+	m.Main = &off
+	m.Sizes = []int64{1_000_000}
+	m.Security = Security{Enabled: true, Profiles: []string{"base", "role", "tls", "tls_role"}, Scenarios: "crud",
+		Repetitions: 5, Warmup: 1, Clients: []int32{1, 100}, HotTickets: 500, Rounds: 3}
+	segs, err := m.Segments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(segs) != 4 {
+		t.Fatalf("%d segments, want one per store", len(segs))
+	}
+	var profiles []string
+	bases := map[int64]bool{}
+	for _, st := range segs[0].Steps {
+		switch k := st.Kind.(type) {
+		case *tbv1.Step_Scenarios:
+			profiles = append(profiles, k.Scenarios.Profile)
+			if bases[k.Scenarios.IterationBase] {
+				t.Fatal("profiles share iterations")
+			}
+			bases[k.Scenarios.IterationBase] = true
+		case *tbv1.Step_Contend:
+			if len(k.Contend.Clients) != 2 {
+				t.Fatal("contention clients")
+			}
+		}
+	}
+	if len(profiles) != 4 || profiles[0] != "" || profiles[3] != "tls_role" {
+		t.Fatalf("profiles %v (base must be sent as empty)", profiles)
+	}
+	m.Security.Profiles = []string{"bogus"}
+	if m.Validate() == nil {
+		t.Fatal("unknown profile accepted")
+	}
+}

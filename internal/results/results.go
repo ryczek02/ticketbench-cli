@@ -30,11 +30,11 @@ const (
 
 var headers = map[string][]string{
 	ScenariosCSV: {"run_id", "segment", "phase", "otel", "step_id", "store", "tickets", "indexes", "scenario", "op",
-		"repetition", "warmup", "server_ms", "prepare_ms", "e2e_ms", "rows", "timed_out", "error", "trace_id"},
+		"repetition", "warmup", "server_ms", "prepare_ms", "e2e_ms", "rows", "timed_out", "error", "trace_id", "profile"},
 	LoadsCSV: {"run_id", "segment", "store", "tickets", "kind", "server_ms", "checksum", "rows", "trace_id"},
 	ContentionCSV: {"run_id", "segment", "store", "tickets", "indexes", "strategy", "clients", "hot_tickets", "round",
 		"duration_ms", "attempts", "successes", "conflicts", "errors", "consistent", "throughput_per_s",
-		"p50_ms", "p95_ms", "p99_ms", "max_ms", "mean_ms", "trace_id"},
+		"p50_ms", "p95_ms", "p99_ms", "max_ms", "mean_ms", "trace_id", "phase", "profile"},
 	StatsCSV:  {"run_id", "segment", "store", "tickets", "indexes", "data_bytes", "index_bytes", "total_bytes", "rows", "trace_id"},
 	ErrorsCSV: {"run_id", "segment", "step_id", "store", "message", "trace_id"},
 }
@@ -117,6 +117,15 @@ func rowsJSON(m map[string]int64) string {
 	return string(b)
 }
 
+// profile names the connection profile of a row: "base" for the default
+// connection inside the security experiment, empty elsewhere.
+func profile(m *tbv1.ResultMeta) string {
+	if m.Profile == "" && m.Labels["phase"] == "security" {
+		return "base"
+	}
+	return m.Profile
+}
+
 func (w *Writer) write(name string, rec []string) {
 	cw := w.csv[name]
 	_ = cw.Write(rec)
@@ -133,7 +142,7 @@ func (w *Writer) Event(seg string, ev *tbv1.RunEvent) error {
 		def, _ := scenario.Lookup(scenario.ID(s.Scenario))
 		w.write(ScenariosCSV, []string{m.RunId, seg, m.Labels["phase"], m.Labels["otel"], m.StepId, m.Store, i2s(m.Tickets), b2s(m.Indexes),
 			s.Scenario, string(def.Op), i2s(s.Repetition), b2s(s.Warmup), ms(s.ServerNs), ms(s.PrepareNs), ms(s.E2ENs),
-			i2s(s.Rows), b2s(s.TimedOut), s.Error, m.TraceId})
+			i2s(s.Rows), b2s(s.TimedOut), s.Error, m.TraceId, profile(m)})
 		w.Rows++
 		if s.Error != "" {
 			w.Errors++
@@ -149,7 +158,8 @@ func (w *Writer) Event(seg string, ev *tbv1.RunEvent) error {
 		}
 		w.write(ContentionCSV, []string{m.RunId, seg, m.Store, i2s(m.Tickets), b2s(m.Indexes), c.Strategy, i2s(c.Clients), i2s(c.HotTickets),
 			i2s(r.Round), ms(r.DurationNs), i2s(r.Attempts), i2s(r.Successes), i2s(r.Conflicts), i2s(r.Errors), b2s(r.Consistent),
-			strconv.FormatFloat(tput, 'f', 2, 64), ms(r.P50Ns), ms(r.P95Ns), ms(r.P99Ns), ms(r.MaxNs), ms(r.MeanNs), m.TraceId})
+			strconv.FormatFloat(tput, 'f', 2, 64), ms(r.P50Ns), ms(r.P95Ns), ms(r.P99Ns), ms(r.MaxNs), ms(r.MeanNs), m.TraceId,
+			m.Labels["phase"], profile(m)})
 		w.Rows++
 	case *tbv1.RunEvent_Stats:
 		s, m := e.Stats, e.Stats.Meta

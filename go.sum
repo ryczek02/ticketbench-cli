@@ -28,6 +28,8 @@ github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/ryczek02/ticketbench-contracts v0.1.0 h1:pq4Sc+3URodtyLP6beSHBg1aqDmGwy4r4kZRxmZ1X4I=
 github.com/ryczek02/ticketbench-contracts v0.1.0/go.mod h1:G2QqY+HHTDOlGAarQGnpfUN6h5MxPKyaAYOPnapEbJs=
+github.com/ryczek02/ticketbench-contracts v0.2.0 h1:C5eBvd/eaXvU9xQA1dsnf88laObvm+Vg2m6f4iTZDG4=
+github.com/ryczek02/ticketbench-contracts v0.2.0/go.mod h1:G2QqY+HHTDOlGAarQGnpfUN6h5MxPKyaAYOPnapEbJs=
 github.com/spf13/cobra v1.10.2 h1:DMTTonx5m65Ic0GOoRY2c16WCbHxOOw6xxezuLaBpcU=
 github.com/spf13/cobra v1.10.2/go.mod h1:7C1pvHqHw5A4vrJfjNwvOdzYu0Gml16OCs2GRiTUUS4=
 github.com/spf13/pflag v1.0.9 h1:9exaQaMOCwffKiiiYk6/BndUBv+iRViNW+4lEMi0PvY=

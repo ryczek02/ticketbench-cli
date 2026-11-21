@@ -161,7 +161,7 @@ func (r *Report) Scenarios() map[ScenarioKey]*ScenarioRow {
 	}
 	groups := map[ScenarioKey]*acc{}
 	for _, x := range r.scenarios {
-		if x.b("warmup") || x["phase"] == "overhead" {
+		if x.b("warmup") || x["phase"] == "overhead" || x["phase"] == "security" {
 			continue
 		}
 		k := ScenarioKey{x.i("tickets"), x["store"], x.b("indexes"), x["scenario"]}
@@ -214,6 +214,9 @@ func (r *Report) Contention() map[ContentionKey]*ContentionRow {
 	}
 	groups := map[ContentionKey]*acc{}
 	for _, x := range r.contention {
+		if x["phase"] == "security" {
+			continue
+		}
 		k := ContentionKey{x.i("tickets"), x["store"], x["strategy"], x.i("clients")}
 		a := groups[k]
 		if a == nil {
