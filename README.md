@@ -1,5 +1,7 @@
 # ticketbench-cli
 
+[![CI](https://github.com/ryczek02/ticketbench-cli/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ryczek02/ticketbench-cli/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/ryczek02/ticketbench-cli?sort=semver)](https://github.com/ryczek02/ticketbench-cli/releases) [![Go](https://img.shields.io/github/go-mod/go-version/ryczek02/ticketbench-cli)](go.mod) [![License: MIT](https://img.shields.io/github/license/ryczek02/ticketbench-cli)](LICENSE)
+
 `tbench` is the command line client of ticketbench. It builds a benchmark
 plan, sends it to `bench-runner` over gRPC, writes the streamed results to
 CSV and turns them into LaTeX tables and pgfplots data. Part of
