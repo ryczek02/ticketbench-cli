@@ -1,0 +1,1 @@
+{"query_block": {"r_total_time_ms": 26.5, "nested_loop": [{"table": {"table_name": "r", "access_type": "ALL", "r_loops": 1, "r_rows": 1000}}, {"table": {"table_name": "b", "access_type": "ref", "key": "idx_bilety_rezerwacja", "r_loops": 2, "r_rows": 3}}]}}

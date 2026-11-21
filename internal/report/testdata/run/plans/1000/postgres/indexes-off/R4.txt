@@ -1,0 +1,8 @@
+-- postgres R4 tickets=1000 indexes=off trace=t
+-- SELECT ...
+Limit  (cost=1.0..2.0 rows=2 width=39) (actual time=0.5..0.6 rows=2 loops=1)
+  ->  Parallel Seq Scan on rezerwacje r  (cost=0.00..1.00 rows=1 width=8) (actual time=0.1..0.2 rows=1 loops=3)
+        Rows Removed by Filter: 5000
+  ->  Index Scan using idx_bilety_rezerwacja on bilety b  (cost=0.43..8.45 rows=1 width=16)
+        ->  Bitmap Index Scan on idx_rezerwacje_utworzono  (cost=0.00..1.00 rows=1 width=0)
+Execution Time: 12.5 ms

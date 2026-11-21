@@ -1,0 +1,3 @@
+-- valkey R4 tickets=1000 indexes=off trace=t
+-- X | Y
+SCAN r:* + MGET + JSON decode of every reservation

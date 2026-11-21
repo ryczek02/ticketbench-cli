@@ -78,12 +78,13 @@ func readCSV(path string) ([]record, error) {
 // Report holds the raw rows of one or more result directories.
 type Report struct {
 	scenarios, contention, loads, stats []record
+	dirs                                []string
 }
 
 // Load reads result directories. Later directories win when they contain
 // the same (size, store, ...) group, which allows re-running one segment.
 func Load(dirs ...string) (*Report, error) {
-	r := &Report{}
+	r := &Report{dirs: dirs}
 	for _, d := range dirs {
 		for name, dst := range map[string]*[]record{
 			"scenarios.csv": &r.scenarios, "contention.csv": &r.contention, "loads.csv": &r.loads, "stats.csv": &r.stats,

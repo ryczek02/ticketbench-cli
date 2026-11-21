@@ -72,3 +72,36 @@ func TestReport(t *testing.T) {
 		t.Fatalf("macros:\n%s", macros)
 	}
 }
+
+func TestPlans(t *testing.T) {
+	r, err := Load("testdata/run")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]PlanSummary{}
+	for _, p := range r.Plans() {
+		got[p.Store+"/"+p.Scenario] = p
+	}
+	pg := got["postgres/R4"]
+	if !pg.FullScan || pg.TimeMs != 12.5 || pg.Examined != 5000 || len(pg.Access) != 3 || pg.Access[1] != "Index Scan bilety_rezerwacja" || pg.Access[2] != "Bitmap Index Scan rezerwacje_utworzono" {
+		t.Fatalf("postgres %+v", pg)
+	}
+	my := got["mariadb/R4"]
+	if !my.FullScan || my.TimeMs != 26.5 || my.Examined != 1006 || my.Access[0] != "ALL r" || my.Access[1] != "ref bilety_rezerwacja" {
+		t.Fatalf("mariadb %+v", my)
+	}
+	mo := got["mongo/R2"]
+	if !mo.FullScan || mo.TimeMs != 40 || mo.Examined != 10000 || mo.Access[0] != "COLLSCAN" {
+		t.Fatalf("mongo %+v", mo)
+	}
+	if v := got["valkey/R4"]; !v.FullScan {
+		t.Fatalf("valkey %+v", v)
+	}
+	dir := t.TempDir()
+	if _, err := r.Write(dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "tables/plans_postgres_mariadb_1000.tex")); err != nil {
+		t.Fatal(err)
+	}
+}

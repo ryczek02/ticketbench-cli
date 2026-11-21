@@ -1,0 +1,1 @@
+{"queryPlanner": {"winningPlan": {"stage": "SORT", "inputStage": {"stage": "COLLSCAN"}}}, "executionStats": {"executionTimeMillis": {"$numberLong": "40"}, "totalKeysExamined": 0, "totalDocsExamined": 10000, "nReturned": 12}}
