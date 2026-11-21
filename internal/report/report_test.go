@@ -63,6 +63,10 @@ func TestReport(t *testing.T) {
 	if !strings.Contains(string(tab), "t/o") || !strings.Contains(string(tab), `\textbf{\num{1.00}}`) {
 		t.Fatalf("scenario table:\n%s", tab)
 	}
+	values, _ := os.ReadFile(filepath.Join(dir, "values.tex"))
+	if !strings.Contains(string(values), `\@namedef{tb@s@postgres@1000@off@R1}{3}`) || !strings.Contains(string(values), `\@namedef{tb@c@valkey@1000@lua@100}{8000}`) {
+		t.Fatalf("values.tex:\n%s", values)
+	}
 	macros, _ := os.ReadFile(filepath.Join(dir, "macros.tex"))
 	if !strings.Contains(string(macros), `\newcommand{\HOneVerdict}{potwierdzona}`) {
 		t.Fatalf("macros:\n%s", macros)

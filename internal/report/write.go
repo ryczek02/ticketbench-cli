@@ -103,7 +103,7 @@ func onOff(b bool) string {
 // Write produces every output file and returns their relative paths.
 func (r *Report) Write(dir string) ([]string, error) {
 	o := &out{dir: dir}
-	steps := []func(*out) error{r.writeScenarios, r.writeContention, r.writeLoads, r.writeStats, r.writeOverhead, r.writeHypotheses}
+	steps := []func(*out) error{r.writeScenarios, r.writeContention, r.writeLoads, r.writeStats, r.writeOverhead, r.writeHypotheses, r.writeValues}
 	for _, s := range steps {
 		if err := s(o); err != nil {
 			return o.files, err
