@@ -1,5 +1,5 @@
 .git
 .github
-bin
-dist
-results
+/bin
+/dist
+/results
