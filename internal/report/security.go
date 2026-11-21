@@ -25,12 +25,11 @@ type SecurityOverhead struct {
 	N                  int
 }
 
+// securityMeans returns the median server time per (store, profile,
+// scenario). The median is robust to single slow repetitions, which matter
+// for sub-millisecond operations.
 func (r *Report) securityMeans() map[[3]string]float64 {
-	type acc struct {
-		sum float64
-		n   int
-	}
-	a := map[[3]string]*acc{}
+	a := map[[3]string][]float64{}
 	for _, x := range r.scenarios {
 		if x["phase"] != "security" || x.b("warmup") || x["error"] != "" || x.b("timed_out") {
 			continue
@@ -40,15 +39,11 @@ func (r *Report) securityMeans() map[[3]string]float64 {
 			prof = "base"
 		}
 		k := [3]string{x["store"], prof, x["scenario"]}
-		if a[k] == nil {
-			a[k] = &acc{}
-		}
-		a[k].sum += x.f("server_ms")
-		a[k].n++
+		a[k] = append(a[k], x.f("server_ms"))
 	}
 	out := map[[3]string]float64{}
 	for k, v := range a {
-		out[k] = v.sum / float64(v.n)
+		out[k] = summarize(v).Median
 	}
 	return out
 }
@@ -121,7 +116,7 @@ func (r *Report) writeSecurity(o *out) error {
 	if len(means) == 0 {
 		return nil
 	}
-	rows := [][]string{{"store", "profile", "scenario", "mean_ms", "base_ms", "ratio"}}
+	rows := [][]string{{"store", "profile", "scenario", "median_ms", "base_median_ms", "ratio"}}
 	for _, st := range Stores {
 		for _, prof := range SecurityProfiles {
 			for _, def := range scenario.All {

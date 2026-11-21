@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"slices"
 	"testing"
 
 	tbv1 "github.com/ryczek02/ticketbench-contracts/gen/ticketbench/v1"
@@ -95,8 +96,10 @@ func TestSecuritySegments(t *testing.T) {
 			}
 		}
 	}
-	if len(profiles) != 4 || profiles[0] != "" || profiles[3] != "tls_role" {
-		t.Fatalf("profiles %v (base must be sent as empty)", profiles)
+	// warm-up pass (base) + ABCD DCBA
+	want := []string{"", "", "role", "tls", "tls_role", "tls_role", "tls", "role", ""}
+	if !slices.Equal(profiles, want) {
+		t.Fatalf("profiles %v, want %v", profiles, want)
 	}
 	m.Security.Profiles = []string{"bogus"}
 	if m.Validate() == nil {

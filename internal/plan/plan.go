@@ -64,6 +64,16 @@ type Security struct {
 	Rounds      int32    `yaml:"rounds"`
 }
 
+// securityWarmupPass is the number of unmeasured iterations before the
+// measured security passes.
+const securityWarmupPass = 2
+
+func reversed[T any](s []T) []T {
+	out := slices.Clone(s)
+	slices.Reverse(out)
+	return out
+}
+
 // Profiles accepted by the security experiment ("base" is the default connection).
 var Profiles = []string{"base", "role", "tls", "tls_role"}
 
@@ -164,8 +174,8 @@ func (m Matrix) Validate() error {
 				return fmt.Errorf("unknown security profile %q (have %v)", p, Profiles)
 			}
 		}
-		if len(m.Security.Profiles)*int(m.Security.Warmup+m.Security.Repetitions) > 2*BaseIndexesOn {
-			return fmt.Errorf("security: profiles x (warmup + repetitions) must be <= %d", 2*BaseIndexesOn)
+		if securityWarmupPass+2*len(m.Security.Profiles)*int(m.Security.Warmup+m.Security.Repetitions) > 2*BaseIndexesOn {
+			return fmt.Errorf("security: 2 x profiles x (warmup + repetitions) must be <= %d", 2*BaseIndexesOn-securityWarmupPass)
 		}
 		if _, err := scenario.Parse(m.Security.Scenarios); err != nil {
 			return err
@@ -325,12 +335,21 @@ func (m Matrix) securitySegments() []Segment {
 				s.Kind = &tbv1.Step_Load{Load: &tbv1.LoadStep{Workers: int32(m.Load.Workers), BatchSize: int32(m.Load.BatchSize)}}
 			})
 			b.add("indexes-on", func(s *tbv1.Step) { s.Kind = &tbv1.Step_Indexes{Indexes: &tbv1.IndexStep{Enabled: true}} })
-			for i, prof := range sec.Profiles {
+			// One unmeasured pass first, so no profile meets cold caches.
+			b.add("warmup-pass", func(s *tbv1.Step) {
+				s.Kind = &tbv1.Step_Scenarios{Scenarios: &tbv1.ScenarioStep{
+					Scenarios: ids(scs), Repetitions: 0, Warmup: securityWarmupPass, TimeoutMs: m.Timeout.Milliseconds(),
+				}}
+			})
+			// Counterbalanced order (ABCD DCBA): every profile is measured
+			// twice at mirrored positions, so linear drift cancels out.
+			order := append(slices.Clone(sec.Profiles), reversed(sec.Profiles)...)
+			for i, prof := range order {
 				wire := prof
 				if wire == "base" {
 					wire = ""
 				}
-				base := int64(i) * int64(warm+reps)
+				base := securityWarmupPass + int64(i)*int64(warm+reps)
 				b.add("scenarios-"+prof, func(s *tbv1.Step) {
 					s.Kind = &tbv1.Step_Scenarios{Scenarios: &tbv1.ScenarioStep{
 						Scenarios: ids(scs), Repetitions: reps, Warmup: warm, IterationBase: base,
