@@ -1,0 +1,27 @@
+version: 2
+project_name: tbench
+env:
+  - GOWORK=off
+builds:
+  - id: tbench
+    main: ./cmd/tbench
+    binary: tbench
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w
+      - -X github.com/ryczek02/ticketbench-contracts/pkg/version.Version={{.Version}}
+      - -X github.com/ryczek02/ticketbench-contracts/pkg/version.Commit={{.ShortCommit}}
+      - -X github.com/ryczek02/ticketbench-contracts/pkg/version.Date={{.Date}}
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files: [README.md, LICENSE]
+checksum:
+  name_template: checksums.txt
+changelog:
+  sort: asc

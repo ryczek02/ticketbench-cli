@@ -1,0 +1,8 @@
+run_id,segment,phase,otel,step_id,store,tickets,indexes,scenario,op,repetition,warmup,server_ms,prepare_ms,e2e_ms,rows,timed_out,error,trace_id
+r,s,matrix,,x,postgres,1000,false,R1,R,0,false,2,0,3,1,false,,t
+r,s,matrix,,x,postgres,1000,false,R1,R,1,false,4,0,5,1,false,,t
+r,s,matrix,,x,postgres,1000,false,R1,R,-1,true,100,0,100,1,false,,t
+r,s,matrix,,x,valkey,1000,false,R1,R,0,false,1,0,2,1,false,,t
+r,s,matrix,,x,postgres,2000,false,R1,R,0,false,10,0,11,1,false,,t
+r,s,matrix,,x,valkey,2000,false,R1,R,0,false,1,0,2,1,false,,t
+r,s,matrix,,x,valkey,2000,false,R4,R,0,false,0,0,0,0,true,,t
