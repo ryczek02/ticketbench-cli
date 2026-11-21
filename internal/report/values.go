@@ -57,6 +57,9 @@ func (r *Report) writeValues(o *out) error {
 	}
 	loads := map[lk][]float64{}
 	for _, x := range r.loads {
+		if isSecurity(x) {
+			continue
+		}
 		k := lk{x.i("tickets"), x["store"], x["kind"]}
 		loads[k] = append(loads[k], x.f("server_ms")/1000)
 	}
@@ -69,6 +72,9 @@ func (r *Report) writeValues(o *out) error {
 		def(fmt.Sprintf("l@%s@%d@%s", k.store, k.tickets, k.kind), summarize(loads[k]).Mean)
 	}
 	for _, x := range r.stats {
+		if isSecurity(x) {
+			continue
+		}
 		def(fmt.Sprintf("m@%s@%d@%s", x["store"], x.i("tickets"), onOff(x.b("indexes"))), float64(x.i("total_bytes"))/(1<<20))
 	}
 	b.WriteString(`\makeatother

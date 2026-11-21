@@ -422,6 +422,9 @@ func (r *Report) writeLoads(o *out) error {
 	}
 	vals := map[key][]float64{}
 	for _, x := range r.loads {
+		if isSecurity(x) {
+			continue
+		}
 		k := key{x.i("tickets"), x["store"], x["kind"]}
 		vals[k] = append(vals[k], x.f("server_ms")/1000)
 	}
@@ -493,6 +496,9 @@ func (r *Report) writeStats(o *out) error {
 	}
 	last := map[key]record{}
 	for _, x := range r.stats {
+		if isSecurity(x) {
+			continue
+		}
 		last[key{x.i("tickets"), x["store"], x.b("indexes")}] = x
 	}
 	rows := [][]string{{"tickets", "store", "indexes", "total_mb", "data_mb", "index_mb", "rows"}}

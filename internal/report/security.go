@@ -10,6 +10,12 @@ import (
 	"github.com/ryczek02/ticketbench-contracts/pkg/scenario"
 )
 
+// isSecurity reports rows of the security experiment. loads.csv and
+// stats.csv have no phase column, so the segment name is used as well.
+func isSecurity(x record) bool {
+	return x["phase"] == "security" || strings.HasSuffix(x["segment"], "-security")
+}
+
 // SecurityProfiles in report order; "base" is the reference.
 var SecurityProfiles = []string{"base", "role", "tls", "tls_role"}
 
