@@ -37,6 +37,7 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     needs: test
+    if: github.event_name != 'pull_request'
     permissions:
       contents: write
     steps:
@@ -52,10 +53,23 @@ jobs:
           args: ${{ startsWith(github.ref, 'refs/tags/v') && 'release --clean' || 'release --snapshot --clean' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: publish edge prerelease
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete edge --cleanup-tag --yes || true
+          gh release create edge dist/*.tar.gz dist/*.zip dist/checksums.txt \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "edge (${GITHUB_SHA::7})" \
+            --notes "tbench built from main at ${GITHUB_SHA}. Versioned releases are tagged v*."
       - uses: actions/upload-artifact@v5
         with:
           name: tbench-dist
-          path: dist/*.tar.gz
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
 
   image:
     runs-on: ubuntu-latest

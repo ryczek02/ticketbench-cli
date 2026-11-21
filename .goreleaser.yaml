@@ -25,3 +25,5 @@ checksum:
   name_template: checksums.txt
 changelog:
   sort: asc
+snapshot:
+  version_template: "{{ .Version }}-edge+{{ .ShortCommit }}"

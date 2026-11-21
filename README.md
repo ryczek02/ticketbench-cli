@@ -7,7 +7,8 @@ CSV and turns them into LaTeX tables and pgfplots data. Part of
 
 ## Install
 
-Download an archive from the releases page, or:
+Download an archive from the releases page (`edge` follows `main`, `v*` are
+versioned), or:
 
 ```
 go install github.com/ryczek02/ticketbench-cli/cmd/tbench@latest
@@ -88,8 +89,9 @@ goreleaser release --snapshot     # local cross-builds into dist/
 ```
 
 CI runs golangci-lint, tests with the race detector and Go benchmarks. It
-builds snapshot archives with GoReleaser on every push and a release on `v*`
-tags, plus a multi-arch image `ghcr.io/ryczek02/ticketbench-cli`.
+builds archives for linux, darwin and windows (amd64, arm64) with GoReleaser:
+pushes to `main` refresh the `edge` prerelease, `v*` tags publish a release.
+It also pushes a multi-arch image `ghcr.io/ryczek02/ticketbench-cli`.
 
 ## Authors
 
