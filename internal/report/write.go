@@ -657,8 +657,18 @@ func (r *Report) writeHypotheses(o *out) error {
 		names = append(names, human(s))
 	}
 	def("SizesList", strings.Join(names, ", "))
-	def("ScenarioRuns", strconv.Itoa(len(r.scenarios)))
-	def("ContentionRuns", strconv.Itoa(len(r.contention)))
+	// Counts describe the main matrix; the security experiment has its own section.
+	countPhase := func(rows []record) int {
+		n := 0
+		for _, x := range rows {
+			if x["phase"] != "security" {
+				n++
+			}
+		}
+		return n
+	}
+	def("ScenarioRuns", strconv.Itoa(countPhase(r.scenarios)))
+	def("ContentionRuns", strconv.Itoa(countPhase(r.contention)))
 	inconsistent := 0
 	for _, c := range r.Contention() {
 		if !c.Consistent {
